@@ -1,0 +1,19 @@
+{
+	"name"                 : "storefront"
+	,"description"         : "Stateful Data Modeling with Events for both browser and NodeJS environments."
+	,"homepage"            : "http://not-up-yet.com"
+	,"keywords"            : ["datastore","models","states","events","server","client"]
+	,"author"              : "brec-c"
+	,"engines"             : {"node":"*"}
+	,"licenses"            : [{"type":"MIT","url":"https://github.com/brec-c/storefront/blob/master/LICENSE"}]
+	,"repository"          : {"type":"git", "url": "git://github.com/brec-c/storefront.git"}
+	,"main"                : "index.js"
+	,"version"             : "0.0.1"
+	,"dependencies"        : {
+		"coffee-script"    : "~1.2.0"
+		, "stateful"       : ""
+		,"common-emitter"  : ""
+		,"underscore"      : ""
+	}
+	,"devDependencies"     : {}
+}
