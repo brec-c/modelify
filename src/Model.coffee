@@ -1,36 +1,11 @@
 Stateful = require 'stateful'
 _        = require 'underscore'
+
 Store    = require './Store'
+{AttributeFactory, Property, Reference, Collection} = require './Attributes'
 
 class Model extends Stateful
 
-	###
-	This is really how I want to describe the states of a model.
-	Need to update stateful to support this.
-	
-	ALL_CAPS -> these are States.  These you enter / exit
-	One_cap -> these are actions.  These are available actions to perform when in the owning state.
-	
-	Siblings are mutually exclusive.
-	
-	'UNSAVED'
-		'Updating'
-		'Saving'
-	
-	
-	'SAVED'
-		'UNLOADED'
-			'Loading'
-			
-		'LOADED'
-			'Updating'
-			'Editing'
-			'DIRTY'
-				'CONFLICTED'
-				'Syncing'
-	###
-
-	# OLD WAY (similiar to rubicon model)
 	@addState 'EMPTY',
 		transitions :
 			initial : true 
@@ -77,7 +52,7 @@ class Model extends Stateful
 	# Store proxy methods
 	#
 	
-	@store: (name) -> @store = new Store type:@
+	@store = new Store type:@
 
 	@get    : -> @store.get.apply @store, arguments
 	@find   : -> @store.find.apply @store, arguments
@@ -90,4 +65,40 @@ class Model extends Stateful
 	#
 	@_attribute: (kind, name, type, config = {}) ->
 		@::_schema = {} unless @::_schema?
-		@::_schema[name] = _
+		@::_schema[name] = _.extend config,
+			kind: kind
+			name: name
+			type: type
+			
+	@model: (name) -> __storefront.models[name] = this
+	@property:   (name, type, config) -> @_attribute('property',   name, type, config)
+	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
+	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
+
+
+	constructor: (data) ->
+		@buildAttributes()
+		
+		
+	buildAttributes: ->
+		@attributes = {}
+		for name, config of @_schema
+			Object.defineProperty this, name,
+				get: -> @get(name)
+				set: (value) -> @set(name, value)
+
+			attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
+			@attributes[name] = attr
+
+			attr.on "change",      @, "_onAttributeChange"
+			attr.on "stateChange", @, "_onAttributeStateChange"
+			
+				
+		
+		
+		
+		
+		
+		
+		
+		
