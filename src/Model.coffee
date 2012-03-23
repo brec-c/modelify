@@ -2,7 +2,7 @@ Stateful = require 'stateful'
 _        = require 'underscore'
 
 Store    = require './Store'
-{AttributeFactory, Property, Reference, Collection} = require './Attributes'
+{AttributeFactory, Attribute} = require './Attributes'
 
 class Model extends Stateful
 
@@ -15,6 +15,32 @@ class Model extends Stateful
 		transitions :
 			enter   : 'EMPTY'
 			exit    : 'NEW, READY'
+			methods : 
+				update: (name, value, metadata={}) ->
+					if _.isObject name
+						metadata = value or {}
+						data = name
+						data = data.raw() if data instanceof Model
+
+						changes = for attr, value of data
+							@updateAttribute attr, value, metadata
+					else
+						attr = @attributes[name]
+						changes = @updateAttribute attr, value, metadata
+
+					@emit 'change', changes
+
+				updateAttribute: (attribute, value, metadata) -> attribute?.update value, metadata
+
+				onAttributeChange: (attribute, newValue, oldValue, metadata) ->
+					changeObj =
+						property: attribute.name
+						newValue: newValue
+						oldValue: oldValue
+						metadata: metadata
+
+					@emit "change:#{attribute.name}", changeObj
+
 			
 	@addState 'NEW',
 		transitions :
@@ -40,6 +66,20 @@ class Model extends Stateful
 		transitions :
 			enter   : 'READY,CONFLICTED,DIRTY'
 			exit    : 'DIRTY,READY'
+			methods :
+				set: (name, value) ->
+					attribute = @attributes[name]
+					attribute?.set value
+
+				onAttributeChange: (attribute, newValue, oldValue, metadata) ->
+					changeObj =
+						property: attribute.name
+						newValue: newValue
+						oldValue: oldValue
+						metadata: metadata
+
+					@emit "change:#{attribute.name}", changeObj
+
 			
 	@addState 'SYNCING',
 		transitions :
@@ -54,8 +94,8 @@ class Model extends Stateful
 	
 	@store = new Store type:@
 
-	@get    : -> @store.get.apply @store, arguments
-	@find   : -> @store.find.apply @store, arguments
+	@get    : -> @store.get.apply    @store, arguments
+	@find   : -> @store.find.apply   @store, arguments
 	@create : -> @store.create.apply @store, arguments
 	@delete : -> @store.delete.apply @store, arguments
 
@@ -76,9 +116,7 @@ class Model extends Stateful
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
 
 
-	constructor: (data) ->
-		@buildAttributes()
-		
+	constructor: (data) -> @buildAttributes()
 		
 	buildAttributes: ->
 		@attributes = {}
@@ -90,15 +128,13 @@ class Model extends Stateful
 			attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
 			@attributes[name] = attr
 
-			attr.on "change",      @, "_onAttributeChange"
-			attr.on "stateChange", @, "_onAttributeStateChange"
+			attr.on "change",      @, "onAttributeChange"
+			attr.on "stateChange", @, "onAttributeStateChange"
 			
 				
+	dispose: -> _.each @attributes, (attr) => attr.dispose()
 		
-		
-		
-		
-		
-		
-		
-		
+	get: (name) ->
+		attr = @attributes[name]
+		attr?.get()
+
