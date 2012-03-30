@@ -2,7 +2,8 @@ Stateful = require 'stateful'
 _        = require 'underscore'
 
 Store    = require './Store'
-{AttributeFactory, Attribute} = require './Attributes'
+
+{AttributeFactory, Attribute} = require './attributes'
 
 class Model extends Stateful
 
@@ -110,7 +111,6 @@ class Model extends Stateful
 			name: name
 			type: type
 			
-	@model: (name) -> __storefront.models[name] = this
 	@property:   (name, type, config) -> @_attribute('property',   name, type, config)
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)

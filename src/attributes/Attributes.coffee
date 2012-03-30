@@ -1,6 +1,14 @@
 Stateful = require 'stateful'
 Resolver = require './Util'
 
+class AttributeFactory
+
+	@resolve: (type) -> Resolver.resolve 'attribute', type
+	@createAttribute: (attrType, config) -> new @resolve(attrType)(config)
+
+exports.AttributeFactory = AttributeFactory
+
+
 class Attribute extends Stateful
 
 	@addState 'empty',
@@ -84,3 +92,27 @@ class Attribute extends Stateful
 
 
 exports.Attribute = Attribute
+
+class Property extends Attribute
+
+	constructor: (config) ->
+		super
+		@type = window[@config.type]
+
+class ModelReference extends Attribute
+	constructor: (config) ->
+		super
+		@type = Resolver.resolve "model", @config.type
+
+
+class ModelReference extends Attribute
+	constructor: (config) ->
+		super
+		@type = Resolver.resolve "model", @config.type
+
+class ModelCollection extends Attribute
+
+
+
+
+

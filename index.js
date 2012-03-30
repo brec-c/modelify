@@ -1,1 +1,1 @@
-module.exports = require('./lib/storefront');
+module.exports = require('./lib');
