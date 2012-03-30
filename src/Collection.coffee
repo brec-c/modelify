@@ -3,7 +3,7 @@ _        = require 'underscore'
 
 class Collection extends Stateful
 	
-	@define  "lastPos", get: -> Math.max @length-1, 0
+	@define "lastPos", get: -> Math.max @length-1, 0
 	
 	#
 	# Initializes the {Collection}.
@@ -253,7 +253,7 @@ class Collection extends Stateful
 					@[i] = v
 					changed = true
 			
-			@emit 'change', @ if changed
+			@emit('change', @) if changed
 			
 		return @
 	

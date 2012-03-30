@@ -1,8 +1,5 @@
-Stateful = require 'stateful'
-_        = require 'underscore'
-
-Store    = require './Store'
-
+Stateful                      = require 'stateful'
+Store                         = require './Store'
 {AttributeFactory, Attribute} = require './attributes'
 
 class Model extends Stateful
@@ -16,32 +13,36 @@ class Model extends Stateful
 		transitions :
 			enter   : 'EMPTY'
 			exit    : 'NEW, READY'
-			methods : 
-				update: (name, value, metadata={}) ->
-					if _.isObject name
-						metadata = value or {}
-						data = name
-						data = data.raw() if data instanceof Model
+		methods : 
+			update: (name, value, metadata={}) ->
+				if _.isObject name
+					metadata = value or {}
+					data = name
+					data = data.raw() if data instanceof Model
 
-						changes = for attr, value of data
-							@updateAttribute attr, value, metadata
-					else
-						attr = @attributes[name]
-						changes = @updateAttribute attr, value, metadata
+					changes = for attr, value of data
+						@updateAttribute attr, value, metadata
+				else
+					attr = @attributes[name]
+					changes = @updateAttribute attr, value, metadata
 
-					@emit 'change', changes
+				@emit 'change', changes
 
-				updateAttribute: (attribute, value, metadata) -> attribute?.update value, metadata
+			updateAttribute: (attribute, value, metadata) -> attribute?.update value, metadata
 
-				onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-					changeObj =
-						property: attribute.name
-						newValue: newValue
-						oldValue: oldValue
-						metadata: metadata
+			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
+				changeObj =
+					property: attribute.name
+					newValue: newValue
+					oldValue: oldValue
+					metadata: metadata
 
-					@emit "change:#{attribute.name}", changeObj
+				@emit "change:#{attribute.name}", changeObj
 
+			onAttributeStateChange: (attr) ->
+				for name, attribute of @attributes
+					if attribute.require and attribute.is 'EMPTY' then return
+				@state = 'READY'
 			
 	@addState 'NEW',
 		transitions :
@@ -67,19 +68,19 @@ class Model extends Stateful
 		transitions :
 			enter   : 'READY,CONFLICTED,DIRTY'
 			exit    : 'DIRTY,READY'
-			methods :
-				set: (name, value) ->
-					attribute = @attributes[name]
-					attribute?.set value
+		methods :
+			set: (name, value) ->
+				attribute = @attributes[name]
+				attribute?.set value
 
-				onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-					changeObj =
-						property: attribute.name
-						newValue: newValue
-						oldValue: oldValue
-						metadata: metadata
+			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
+				changeObj =
+					property: attribute.name
+					newValue: newValue
+					oldValue: oldValue
+					metadata: metadata
 
-					@emit "change:#{attribute.name}", changeObj
+				@emit "change:#{attribute.name}", changeObj
 
 			
 	@addState 'SYNCING',
@@ -115,8 +116,15 @@ class Model extends Stateful
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
 
+	constructor: (data = null) ->
+		@buildAttributes()
 
-	constructor: (data) -> @buildAttributes()
+		unless data
+			@store.create @
+			return
+
+		@state = 'UPDATING'
+		@update data
 		
 	buildAttributes: ->
 		@attributes = {}
@@ -128,8 +136,8 @@ class Model extends Stateful
 			attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
 			@attributes[name] = attr
 
-			attr.on "change",      @, "onAttributeChange"
-			attr.on "stateChange", @, "onAttributeStateChange"
+			attr.on "change",      => @onAttributeChange
+			attr.on "stateChange", => @onAttributeStateChange
 			
 				
 	dispose: -> _.each @attributes, (attr) => attr.dispose()

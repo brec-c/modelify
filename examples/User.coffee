@@ -9,3 +9,11 @@ class User extends Model
 
 
 module.exports = Util.registerPlugin 'model', 'user', User
+
+me = new User
+
+console.log "me is #{me.state}"
+
+q = User.find()
+
+console.log "num users is #{q.length}"
