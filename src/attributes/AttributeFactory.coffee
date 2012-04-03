@@ -1,4 +1,4 @@
-Resolver = require './Util'
+Resolver = require '../Util'
 
 class AttributeFactory
 

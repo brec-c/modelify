@@ -175,7 +175,7 @@ class Collection extends Stateful
 	#
 	# Alias for add().
 	#
-	push: (item) -> @add(item)
+	ush: (item) -> @add(item)
 
 	#
 	# Removes an item from the end of the collection.

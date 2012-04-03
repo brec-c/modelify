@@ -1,8 +1,8 @@
-Stateful   = require 'stateful'
+Base       = require './Base'
 Model      = require './Model'
-ModelQuery = require './ModelQuery'
+# ModelQuery = require './ModelQuery'
 
-class Store extends Stateful
+class Store extends Base
 
 	@define "type", get: -> @config.type
 
@@ -11,9 +11,13 @@ class Store extends Stateful
 
 		@models = {}
 
+	register: (model) ->
+		# add listeners for:
+		# statechanges: dirty, new, 
 
 	get: ->
 	find: ->
 	create: ->
 	delete: ->
 
+module.exports = Store

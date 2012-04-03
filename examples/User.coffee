@@ -1,19 +1,18 @@
-Model = require '../src/Model'
-Util = require '../src/Util'
+{Model} = require '../src'
 
 class User extends Model
 
-	@property 'id', 'String'
-	@property 'name', 'String'
-	@property 'username', 'String'
+	# @property 'id',       'String'
+	# @property 'name',     'String'
+	# @property 'username', 'String'
 
 
-module.exports = Util.registerPlugin 'model', 'user', User
+module.exports = User
 
 me = new User
 
 console.log "me is #{me.state}"
 
-q = User.find()
+# q = User.find()
 
-console.log "num users is #{q.length}"
+# console.log "num users is #{q.length}"

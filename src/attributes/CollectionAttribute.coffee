@@ -1,4 +1,7 @@
 Attribute = require './Attribute'
 
-class ModelCollection extends Attribute
+class CollectionAttribute extends Attribute
 
+	@declare 'collection'
+
+module.exports = CollectionAttribute

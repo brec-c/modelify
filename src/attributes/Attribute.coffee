@@ -1,7 +1,7 @@
-Stateful = require 'stateful'
-Resolver = require './Util'
+Base     = require '../Base'
+Resolver = require '../Util'
 
-class Attribute extends Stateful
+class Attribute extends Base
 
 	@addState 'empty',
 		transitions:
@@ -22,6 +22,8 @@ class Attribute extends Stateful
 		transitions:
 			enter:   'dirty'
 			exit:    'dirty, ready'
+
+	@buildStateChart()
 	
 	@define "name",       get: -> @config.name
 	@define "owner",      get: -> @config.owner

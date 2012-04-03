@@ -1,17 +1,14 @@
-Stateful                      = require 'stateful'
+Base                          = require './Base'
 Store                         = require './Store'
 {AttributeFactory, Attribute} = require './attributes'
+Util                          = require './Util'
+_                             = require 'underscore'
 
-class Model extends Stateful
-
-	@addState 'EMPTY',
-		transitions :
-			initial : true 
-			exit    : 'UPDATING'
+class Model extends Base
 	
 	@addState 'UPDATING',
 		transitions :
-			enter   : 'EMPTY'
+			initial : true 
 			exit    : 'NEW, READY'
 		methods : 
 			update: (name, value, metadata={}) ->
@@ -85,7 +82,7 @@ class Model extends Stateful
 			
 	@addState 'SYNCING',
 		transitions :
-			enter   : 'DIRTY'
+			enter   : 'DIRTY, NEW'
 			exit    : 'READY'
 
 	@buildStateChart()
@@ -94,7 +91,9 @@ class Model extends Stateful
 	# Store proxy methods
 	#
 	
+	console.log "creating store"
 	@store = new Store type:@
+	console.log "got here: #{@store.type}"
 
 	@get    : -> @store.get.apply    @store, arguments
 	@find   : -> @store.find.apply   @store, arguments
@@ -116,16 +115,14 @@ class Model extends Stateful
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
 
-	constructor: (data = null) ->
+	Util.registerPlugin('model', @.constructor.name, @)
+
+	constructor: (data) ->
 		@buildAttributes()
+		@store.register @
 
-		unless data
-			@store.create @
-			return
+		@update data if data
 
-		@state = 'UPDATING'
-		@update data
-		
 	buildAttributes: ->
 		@attributes = {}
 		for name, config of @_schema
@@ -138,11 +135,11 @@ class Model extends Stateful
 
 			attr.on "change",      => @onAttributeChange
 			attr.on "stateChange", => @onAttributeStateChange
-			
-				
+
 	dispose: -> _.each @attributes, (attr) => attr.dispose()
 		
 	get: (name) ->
 		attr = @attributes[name]
 		attr?.get()
 
+module.exports = Model
