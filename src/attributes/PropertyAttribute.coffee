@@ -1,4 +1,5 @@
 Attribute = require './Attribute'
+Util      = require '../Util'
 
 class PropertyAttribute extends Attribute
 
@@ -6,6 +7,6 @@ class PropertyAttribute extends Attribute
 
 	constructor: (config) ->
 		super
-		@type = window[@config.type]
+		@type = Util.resolve[@config.type]
 
 module.exports = PropertyAttribute

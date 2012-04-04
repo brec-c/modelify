@@ -1,6 +1,5 @@
 Base       = require './Base'
-Model      = require './Model'
-# ModelQuery = require './ModelQuery'
+# Model      = require './Model'
 
 class Store extends Base
 
@@ -11,7 +10,8 @@ class Store extends Base
 
 		@models = {}
 
-	register: (model) ->
+	registerModel: (model) ->
+		# @debug model
 		# add listeners for:
 		# statechanges: dirty, new, 
 

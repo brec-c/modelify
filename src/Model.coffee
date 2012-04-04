@@ -8,9 +8,10 @@ class Model extends Base
 	
 	@addState 'UPDATING',
 		transitions :
-			initial : true 
-			exit    : 'NEW, READY'
-		methods : 
+			initial : true
+			enter   : 'READY, DIRTY, CONFLICTED'
+			exit    : 'NEW, READY, DIRTY, CONFLICTED'
+		methods     : 
 			update: (name, value, metadata={}) ->
 				if _.isObject name
 					metadata = value or {}
@@ -38,7 +39,7 @@ class Model extends Base
 
 			onAttributeStateChange: (attr) ->
 				for name, attribute of @attributes
-					if attribute.require and attribute.is 'EMPTY' then return
+					if attribute.require and attribute.is 'NOT_SET' then return
 				@state = 'READY'
 			
 	@addState 'NEW',
@@ -49,17 +50,17 @@ class Model extends Base
 	@addState 'READY',
 		transitions :
 			enter   : 'UPDATING,DIRTY,SYNCING,CONFLICTED,EDITING'
-			exit    : 'EDITING'
+			exit    : 'EDITING, UPDATING'
 			
 	@addState 'DIRTY',
 		transitions :
-			enter   : 'CONFLICTED,EDITING'
-			exit    : 'READY,SYNCING,CONFLICTED,EDITING'
+			enter   : 'CONFLICTED,EDITING,UPDATING'
+			exit    : 'READY,SYNCING,CONFLICTED,EDITING,UPDATING'
 			
 	@addState 'CONFLICTED',
 		transitions :
-			enter   : 'DIRTY'
-			exit    : 'DIRTY,READY,EDITING'
+			enter   : 'DIRTY,UPDATING'
+			exit    : 'DIRTY,READY,EDITING,UPDATING'
 			
 	@addState 'EDITING',
 		transitions :
@@ -79,7 +80,7 @@ class Model extends Base
 
 				@emit "change:#{attribute.name}", changeObj
 
-			
+	# do we want models to be aware of this?
 	@addState 'SYNCING',
 		transitions :
 			enter   : 'DIRTY, NEW'
@@ -91,15 +92,14 @@ class Model extends Base
 	# Store proxy methods
 	#
 	
-	console.log "creating store"
-	@store = new Store type:@
-	console.log "got here: #{@store.type}"
+	@registerModelType: -> 
+		@::store = new Store type:@
+		console.log  "store exists: #{@::store?}"
 
 	@get    : -> @store.get.apply    @store, arguments
 	@find   : -> @store.find.apply   @store, arguments
 	@create : -> @store.create.apply @store, arguments
 	@delete : -> @store.delete.apply @store, arguments
-
 
 	#
 	# Model declarative definitions
@@ -115,17 +115,22 @@ class Model extends Base
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
 
-	Util.registerPlugin('model', @.constructor.name, @)
+	Util.registerPlugin('model', @constructor.name, @)
 
 	constructor: (data) ->
+		super
+
+		console.log  "store exists: #{@store?} and type is #{@store.type.name}"
+
 		@buildAttributes()
-		@store.register @
+		@store.registerModel @
 
 		@update data if data
 
 	buildAttributes: ->
 		@attributes = {}
 		for name, config of @_schema
+			console.log "building attribute for #{name}"
 			Object.defineProperty this, name,
 				get: -> @get(name)
 				set: (value) -> @set(name, value)

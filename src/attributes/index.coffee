@@ -1,2 +1,5 @@
-exports.AttributeFactory = require './AttributeFactory'
-exports.Attribute        = require './Attribute'
+exports.AttributeFactory    = require './AttributeFactory'
+exports.Attribute           = require './Attribute'
+exports.CollectionAttribute = require './CollectionAttribute'
+exports.PropertyAttribute   = require './PropertyAttribute'
+exports.ReferenceAttribute  = require './ReferenceAttribute'

@@ -3,25 +3,25 @@ Resolver = require '../Util'
 
 class Attribute extends Base
 
-	@addState 'empty',
+	@addState 'NOT_SET',
 		transitions:
 			initial: true
-			exit:    'ready, dirty'
+			exit:    'SET'#, DIRTY'
 
-	@addState 'ready',
+	@addState 'SET',
 		transitions:
-			enter:   'dirty, conflicted, empty' 
-			exit:    'dirty'
+			enter:   'DIRTY, CONFLICTED, NOT_SET'
+			exit:    'DIRTY'
 
-	@addState 'dirty',
+	@addState 'DIRTY',
 		transitions:
-			enter:   'empty, ready, conflicted'
-			exit:    'ready, conflicted'
+			enter:   'SET, CONFLICTED' #NOT_SET
+			exit:    'SET, CONFLICTED'
 
-	@addState 'conflicted',
+	@addState 'CONFLICTED',
 		transitions:
-			enter:   'dirty'
-			exit:    'dirty, ready'
+			enter:   'DIRTY'
+			exit:    'DIRTY, SET'
 
 	@buildStateChart()
 	
@@ -51,33 +51,33 @@ class Attribute extends Base
 		
 		isDiff = @_applyValue value
 		if isDiff
-			@state = 'dirty'
+			@state = 'DIRTY'
 			@_emitChange @value, @previous
 
 	update: (value, metadata) ->
 		isDiff = @_applyValue value
 		if isDiff
-			if @is 'empty' then @state = 'ready'
-			else if @is 'dirty' then @state = 'conflicted'
+			if @is 'NOT_SET' then @state = 'SET'
+			else if @is 'DIRTY' then @state = 'CONFLICTED'
 
 			@_emitChange @value, @previous, metadata
 	
 	rollback: ->
-		return this unless @is "dirty"
+		return this unless @is "DIRTY"
 		
 		@value = @previous # even if undefined I think
 		@previous = undefined
 		
-		@state = 'ready'
+		@state = 'SET'
 		@_emitChange @value, @previous
 		
 		return this
 	
 	commit: ->
-		return this unless @is "dirty"
+		return this unless @is "DIRTY"
 		
 		@previous = undefined # not sure why we do this here?
-		@state = 'ready'
+		@state = 'SET'
 		
 		return this
 	
@@ -85,4 +85,4 @@ class Attribute extends Base
 	_emitChange: (newValue, oldValue, metadata) -> @emit "change", newValue, oldValue, metadata
 
 
-exports.Attribute = Attribute
+module.exports = Attribute
