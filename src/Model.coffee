@@ -18,11 +18,12 @@ class Model extends Base
 					data = name
 					data = data.raw() if data instanceof Model
 
-					changes = for attr, value of data
-						@updateAttribute attr, value, metadata
+					changes = for name, value of data
+						attribute = @attributes[name]
+						@updateAttribute attribute, value, metadata
 				else
-					attr = @attributes[name]
-					changes = @updateAttribute attr, value, metadata
+					attribute = @attributes[name]
+					changes = @updateAttribute attribute, value, metadata
 
 				@emit 'change', changes
 

@@ -7,6 +7,8 @@ class Attribute extends Base
 		transitions:
 			initial: true
 			exit:    'SET'#, DIRTY'
+		methods:
+			set: (value) ->	throw new Error "Can't set an attribute that isn't loaded."
 
 	@addState 'SET',
 		transitions:
@@ -17,11 +19,35 @@ class Attribute extends Base
 		transitions:
 			enter:   'SET, CONFLICTED' #NOT_SET
 			exit:    'SET, CONFLICTED'
+		methods: 
+			rollback: ->
+				@value = @previous # even if undefined I think
+				@previous = undefined
+
+				@state = 'SET'
+				@_emitChange @value, @previous
+
+				return this
+			
+			commit: ->
+				@previous = undefined # not sure why we do this here?
+				@state = 'SET'
+
+				return this
 
 	@addState 'CONFLICTED',
 		transitions:
 			enter:   'DIRTY'
 			exit:    'DIRTY, SET'
+		methods: 
+			rollback: ->
+				@value = @previous # even if undefined I think
+				@previous = undefined
+
+				@state = 'SET'
+				@_emitChange @value, @previous
+
+				return this
 
 	@buildStateChart()
 	
@@ -30,6 +56,7 @@ class Attribute extends Base
 	@define "readonly",   get: -> if @config.readonly? then @config.readonly else false
 	@define "required",   get: -> if @config.isRequired? then @config.isRequired else false
 	@define "transient",  get: -> if @config.isTransient? then @config.isTransient else false
+	@define "type",       get: -> Resolver.resolve @config.type
 
 	@declare: (type) -> Resolver.registerPlugin 'attribute', type, @
 
@@ -46,7 +73,6 @@ class Attribute extends Base
 	raw: -> throw new Error("Override raw() on #{this}")	
 	get: -> throw new Error("Override get() on #{this}")
 	set: (value) ->
-		throw new Error "Can't set an attribute that isn't loaded." if @is 'empty'
 		throw new Error "Can't set a readonly attribute." if @readonly
 		
 		isDiff = @_applyValue value
@@ -61,26 +87,9 @@ class Attribute extends Base
 			else if @is 'DIRTY' then @state = 'CONFLICTED'
 
 			@_emitChange @value, @previous, metadata
-	
-	rollback: ->
-		return this unless @is "DIRTY"
-		
-		@value = @previous # even if undefined I think
-		@previous = undefined
-		
-		@state = 'SET'
-		@_emitChange @value, @previous
-		
-		return this
-	
-	commit: ->
-		return this unless @is "DIRTY"
-		
-		@previous = undefined # not sure why we do this here?
-		@state = 'SET'
-		
-		return this
-	
+			
+	rollback: -> @
+	commit: -> @
 	_applyValue: (value) -> throw new Error "Override _applyValue on #{@}"	
 	_emitChange: (newValue, oldValue, metadata) -> @emit "change", newValue, oldValue, metadata
 
