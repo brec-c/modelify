@@ -12,8 +12,7 @@ class Store extends Base
 
 	registerModel: (model) ->
 		# @debug model
-		# add listeners for:
-		# statechanges: dirty, new, 
+		# add listeners for: statechanges: dirty, new, 
 
 	get: ->
 	find: ->

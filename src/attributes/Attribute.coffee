@@ -70,8 +70,8 @@ class Attribute extends Base
 		
 		@set(@config.default) if @config.default?
 
-	raw: -> throw new Error("Override raw() on #{this}")	
-	get: -> throw new Error("Override get() on #{this}")
+	raw: -> @value
+	get: -> @value
 	set: (value) ->
 		throw new Error "Can't set a readonly attribute." if @readonly
 		

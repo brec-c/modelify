@@ -7,7 +7,7 @@ class Base extends Stateful
 
 	debug: (obj, depth=1) -> util.log util.inspect obj, true, depth, true
 
-	constructor: (@config) ->
+	constructor: (@config={}) ->
 		super @config
 
 module.exports = Base

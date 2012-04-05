@@ -14,6 +14,6 @@ module.exports =
 
 	resolve: (type, name) -> 
 		return @plugins[type][name] if name
-		return _this[type]
+		return _this[type] or @plugins['model'][type]
 
 	pascalCase: (str) -> return str[0].toUpperCase() + str.substr(1)

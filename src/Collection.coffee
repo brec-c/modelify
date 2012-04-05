@@ -1,9 +1,11 @@
-Stateful = require 'stateful'
+Base     = require './Base'
 _        = require 'underscore'
 
-class Collection extends Stateful
+class Collection extends Base
 	
 	@define "lastPos", get: -> Math.max @length-1, 0
+	@define 'last',    get: -> @[@lastPos]
+	@define 'first',   get: -> @[0]
 	
 	#
 	# Initializes the {Collection}.
@@ -13,19 +15,20 @@ class Collection extends Stateful
 	constructor: (config) ->
 		super(config)
 		@length = 0
-		@addAll(@config.items) if @config.items?
 		
 		if @config.sort?.by?
-			@sortByFunc = 
-				if @config.sort.dir? and @config.sort.dir is 'desc'
-					(a,b) => if a[@config.sort.by]>b[@config.sort.by] then -1 else 1
-				else
-					(a,b) => if a[@config.sort.by]<b[@config.sort.by] then -1 else 1
-		else
-			@sortByFunc = (a,b) => return 0
+			if @config.sort.dir? and @config.sort.dir is 'desc'
+				@comparator = (a,b) => if a[@config.sort.by]>b[@config.sort.by] then -1 else 1
+			else
+				@comparator = (a,b) => if a[@config.sort.by]<b[@config.sort.by] then -1 else 1
+		else if @config.comparator then @comparator = @config.comparator
+		# else unless @comparator
+		# 			@comparator = (a,b) => return 0
+			
+		@addAll(@config.items) if @config.items?
 
 	clone: -> new Collection items: @
-	
+		
 	#
 	# Adds the specified item to the end of the collection.
 	#
@@ -33,12 +36,10 @@ class Collection extends Stateful
 	# @returns The collection.
 	#
 	add: (item, index=null) ->
-		# console.error "#{@} add #{item}"
 		if index is null or index is @length
 			index = @length
 			@[index] = item
 			@length++
-			@onAdd(item, index)
 		else
 			if typeof index isnt 'number' or index < 0
 				throw new Error("Bad index #{index}")
@@ -47,17 +48,24 @@ class Collection extends Stateful
 			@[index] = item
 			@length++
 			@_reattach(tail, index + 1)
-			@onAdd(item, index)
-			
-		#hackety hack for reverse sort	
-		if @config.sort?.dir is 'desc'
-			@sort()
-			@onAdd(item, @indexOf(item))
-			@emit 'change', @
-			
+		
+		if @comparator then @sort()
+		@onAdd(item, @indexOf(item))
 			
 		return this
-	
+		
+	sort: ->
+		arr = @toArray()
+		arr.sort @comparator
+		
+		hasChanged = false
+		for value, pos in arr
+			if @[pos] isnt value 
+				@[pos] = value
+				hasChanged = true
+		
+		return hasChanged
+
 	#
 	# Adds all of the items in the specified array-like object to the collection.
 	#
@@ -90,7 +98,7 @@ class Collection extends Stateful
 	# @returns True if the collection is empty, otherwise false.
 	#
 	isEmpty: ->	@length is 0
-	
+
 	#
 	# Returns a value indicating whether or not the collection contains the same items (in the same order)
 	# as the specified array-like object.
@@ -161,6 +169,7 @@ class Collection extends Stateful
 	# @returns The item that was moved.
 	#
 	move: (oldIndex, newIndex) ->
+		throw new Error "Can't move items in a sorted collection"
 		if oldIndex is newIndex then return @[oldIndex]
 		
 		if oldIndex >= @length
@@ -175,7 +184,7 @@ class Collection extends Stateful
 	#
 	# Alias for add().
 	#
-	ush: (item) -> @add(item)
+	push: (item) -> @add(item)
 
 	#
 	# Removes an item from the end of the collection.
@@ -240,23 +249,6 @@ class Collection extends Stateful
 	# The implementation of each just proxies to underscore.js.
 	#
 	
-	sort: ->
-		if @config.sort?.by?
-			# console.error "#{@} sort #{JSON.stringify @config.sort}"
-			values = @toArray()
-			
-			values.sort @sortByFunc
-
-			changed = false
-			for i,v of values
-				if @[i] isnt v
-					@[i] = v
-					changed = true
-			
-			@emit('change', @) if changed
-			
-		return @
-	
 	@underscoreProxyMethods: [
 		'all'
 		'any'
@@ -276,7 +268,6 @@ class Collection extends Stateful
 		'indexOf'
 		'intersection'
 		'invoke'
-		#'isEqual' # FFS this causes an infinite loop in underscore's impl.
 		'last'
 		'lastIndexOf'
 		'map'
@@ -291,8 +282,6 @@ class Collection extends Stateful
 		'select'
 		'size'
 		'some'
-		# 'sortBy'
-		# 'sortedIndex'
 		'union'
 		'uniq'
 		'without'
@@ -300,8 +289,11 @@ class Collection extends Stateful
 		'zip'
 	]
 
-	for method in @underscoreProxyMethods
-		do (method) =>
+	@loadProxyMethods: ->
+		_.each @underscoreProxyMethods, (method) =>
+			console.log method
 			@::[method] = (args...) -> _[method].apply(_, [this].concat(args))
+			
+	@loadProxyMethods()
 
 module.exports = Collection

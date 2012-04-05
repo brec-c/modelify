@@ -130,6 +130,10 @@ class Model extends Base
 
 	buildAttributes: ->
 		@attributes = {}
+		
+		unless @_schema['id']?
+			@_schema['id'] = kind: 'property', name: 'id', type: 'Number'
+		
 		for name, config of @_schema
 			console.log "building attribute for #{name}"
 			Object.defineProperty this, name,
@@ -147,5 +151,16 @@ class Model extends Base
 	get: (name) ->
 		attr = @attributes[name]
 		attr?.get()
+		
+	toString: ->
+		sup = super
+		if @attributes['id']?.is 'SET' then sup += "[#{@id}]"
+		return sup
+		
+	toJSON: (attributes=@attributes)->
+		values = {}
+		for name,attr of @attributes
+			values[attr.name] = attr.raw()
+		return values
 
 module.exports = Model
