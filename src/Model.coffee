@@ -6,86 +6,91 @@ _                             = require 'underscore'
 
 class Model extends Base
 	
-	@addState 'UPDATING',
+	@addState 'NEW',
 		transitions :
 			initial : true
-			enter   : 'READY, DIRTY, CONFLICTED'
-			exit    : 'NEW, READY, DIRTY, CONFLICTED'
+			exit    : 'LOCAL, READY'
 		methods     : 
-			update: (name, value, metadata={}) ->
-				if _.isObject name
-					metadata = value or {}
-					data = name
-					data = data.raw() if data instanceof Model
+			
+			buildAttributes: ->
+				@attributes = {}
 
-					changes = for name, value of data
-						attribute = @attributes[name]
-						@updateAttribute attribute, value, metadata
-				else
-					attribute = @attributes[name]
-					changes = @updateAttribute attribute, value, metadata
+				unless @_schema['id']?
+					@_schema['id'] = kind: 'property', name: 'id', type: 'String'
 
-				@emit 'change', changes
+				for name, config of @_schema
+					console.log "building attribute for #{name}"
+					Object.defineProperty this, name,
+						get: -> @get(name)
+						set: (value) -> @set(name, value)
 
-			updateAttribute: (attribute, value, metadata) -> attribute?.update value, metadata
+					attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
+					@attributes[name] = attr
 
+					attr.on "change",      => @onAttributeChange
+					attr.on "stateChange", => @onAttributeStateChange
+			
+			# now, determine from data passed in if we're an existing model or a new local model
+			parse: (obj) ->
+				
+					
 			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-				changeObj =
-					property: attribute.name
-					newValue: newValue
-					oldValue: oldValue
-					metadata: metadata
-
-				@emit "change:#{attribute.name}", changeObj
+				@eventBuffer = [] unless @eventBuffer
+				@eventBuffer.push arguments
 
 			onAttributeStateChange: (attr) ->
 				for name, attribute of @attributes
 					if attribute.require and attribute.is 'NOT_SET' then return
 				@state = 'READY'
 			
-	@addState 'NEW',
+	@addState 'LOCAL',
 		transitions :
-			enter   : 'UPDATING'
+			enter   : 'NEW'
 			exit    : 'SYNCING'
 			
 	@addState 'READY',
 		transitions :
-			enter   : 'UPDATING,DIRTY,SYNCING,CONFLICTED,EDITING'
-			exit    : 'EDITING, UPDATING'
+			enter   : 'NEW,DIRTY,SYNCING,EDITING'
+			exit    : 'EDITING'
 			
 	@addState 'DIRTY',
 		transitions :
-			enter   : 'CONFLICTED,EDITING,UPDATING'
-			exit    : 'READY,SYNCING,CONFLICTED,EDITING,UPDATING'
+			enter   : 'EDITING,NEW'
+			exit    : 'READY,SYNCING,EDITING'
 			
-	@addState 'CONFLICTED',
-		transitions :
-			enter   : 'DIRTY,UPDATING'
-			exit    : 'DIRTY,READY,EDITING,UPDATING'
+	# @addState 'CONFLICTED',
+	# 	transitions :
+	# 		enter   : 'DIRTY'
+	# 		exit    : 'DIRTY,READY,EDITING'
 			
 	@addState 'EDITING',
 		transitions :
-			enter   : 'READY,CONFLICTED,DIRTY'
+			enter   : 'READY,DIRTY'
 			exit    : 'DIRTY,READY'
-		methods :
+		methods     :
+			
 			set: (name, value) ->
 				attribute = @attributes[name]
 				attribute?.set value
+				
+			onChange: (changes, metadata) ->
+				@eventBuffer = [] @eventBuffer unless @eventBuffer
+				@eventBuffer.push arguments
 
 			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-				changeObj =
-					property: attribute.name
-					newValue: newValue
-					oldValue: oldValue
-					metadata: metadata
-
-				@emit "change:#{attribute.name}", changeObj
+				@eventBuffer = [] unless @eventBuffer
+				@eventBuffer.push arguments
 
 	# do we want models to be aware of this?
 	@addState 'SYNCING',
 		transitions :
-			enter   : 'DIRTY, NEW'
+			enter   : 'DIRTY, LOCAL'
 			exit    : 'READY'
+		methods     : 
+			
+			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
+				@eventBuffer = [] unless @eventBuffer
+				@eventBuffer.push arguments
 
 	@buildStateChart()
 
@@ -99,8 +104,8 @@ class Model extends Base
 
 	@get    : -> @store.get.apply    @store, arguments
 	@find   : -> @store.find.apply   @store, arguments
-	@create : -> @store.create.apply @store, arguments
-	@delete : -> @store.delete.apply @store, arguments
+	@parse  : -> @store.parse.apply  @store, arguments
+
 
 	#
 	# Model declarative definitions
@@ -120,29 +125,41 @@ class Model extends Base
 		super
 
 		@buildAttributes()
+		@parse data
 		@store.registerModel @
 
-		@update data if data
+	dispose: -> 
+		super
+		_.each @attributes, (attr) => attr.dispose()
 
-	buildAttributes: ->
-		@attributes = {}
+	update: (name, value, metadata={}) ->
 		
-		unless @_schema['id']?
-			@_schema['id'] = kind: 'property', name: 'id', type: 'String'
+		updateAttribute = (attribute, value, metadata) -> attribute?.update value, metadata
 		
-		for name, config of @_schema
-			console.log "building attribute for #{name}"
-			Object.defineProperty this, name,
-				get: -> @get(name)
-				set: (value) -> @set(name, value)
+		if _.isObject name
+			metadata = value or {}
+			data = name
+			data = data.raw() if data instanceof Model
 
-			attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
-			@attributes[name] = attr
+			changes = for name, value of data
+				attribute = @attributes[name]
+				updateAttribute attribute, value, metadata
+		else
+			attribute = @attributes[name]
+			changes = [updateAttribute(attribute, value, metadata)]
 
-			attr.on "change",      => @onAttributeChange
-			attr.on "stateChange", => @onAttributeStateChange
+		@onChange changes, metadata
+	
+	onChange: (changes, metadata) -> @emit 'change', changes, metadata
+	
+	onAttributeChange: (attribute, newValue, oldValue, metadata) ->
+		changeObj =
+			property: attribute.name
+			newValue: newValue
+			oldValue: oldValue
+			metadata: metadata
 
-	dispose: -> _.each @attributes, (attr) => attr.dispose()
+		@emit "change:#{attribute.name}", changeObj
 		
 	get: (name) ->
 		attr = @attributes[name]

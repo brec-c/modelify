@@ -22,16 +22,18 @@ class Beer extends Model
 
 me = new User 
 	name: 'brec'
-	test: 123
+	test: '123'
+	fav: 1
 	
 beer = new Beer 
+	id: 1
 	kind: 'wit'
 	obj:  text: 'hello'
 
 console.log "me is in #{me.state}"
 console.log "beer is in #{beer.state}"
 
-console.log "me.toJSON: #{util.inspect me.toJSON()}, me.attributes: #{util.inspect me.attributes}"
+console.log "me.toJSON: #{util.inspect me.toJSON()}"
 console.log "beer.toJSON is #{util.inspect beer.toJSON()}"
 
 # q = User.find()

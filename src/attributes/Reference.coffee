@@ -11,7 +11,9 @@ class Reference extends Attribute
 		unless @store? 
 			throw new Error "Invalid type (#{@typeString}) for reference."
 			
-	raw: -> @value.id?
+	raw: -> 
+		console.log require('util').inspect @value
+		@value.id?
 	
 	_applyValue: (ref) ->
 		oldValue = @value

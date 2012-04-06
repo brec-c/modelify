@@ -12,13 +12,17 @@ class Attribute extends Base
 
 	@addState 'SET',
 		transitions:
-			enter:   'DIRTY, CONFLICTED, NOT_SET'
-			exit:    'DIRTY'
+			enter  :   'DIRTY, NOT_SET'
+			exit   :   'DIRTY'
+		methods    :
+			raw: -> @value
+			get: -> @value
+			
 
 	@addState 'DIRTY',
 		transitions:
-			enter:   'SET, CONFLICTED' #NOT_SET
-			exit:    'SET, CONFLICTED'
+			enter:   'SET' #NOT_SET
+			exit:    'SET'
 		methods: 
 			rollback: ->
 				@value = @previous # even if undefined I think
@@ -35,19 +39,19 @@ class Attribute extends Base
 
 				return this
 
-	@addState 'CONFLICTED',
-		transitions:
-			enter:   'DIRTY'
-			exit:    'DIRTY, SET'
-		methods: 
-			rollback: ->
-				@value = @previous # even if undefined I think
-				@previous = undefined
-
-				@state = 'SET'
-				@_emitChange @value, @previous
-
-				return this
+	# @addState 'CONFLICTED',
+	# 	transitions:
+	# 		enter:   'DIRTY'
+	# 		exit:    'DIRTY, SET'
+	# 	methods: 
+	# 		rollback: ->
+	# 			@value = @previous # even if undefined I think
+	# 			@previous = undefined
+	# 
+	# 			@state = 'SET'
+	# 			@_emitChange @value, @previous
+	# 
+	# 			return this
 
 	@buildStateChart()
 	
@@ -60,10 +64,8 @@ class Attribute extends Base
 	@define 'typeString', get: -> @config.type
 	@define 'type',
 		get: -> 
-			if TypeRegister.isModel(@config.type)
-				TypeRegister.getModel @config.type 
-			else 
-				TypeRegister.resolve @config.type
+			if TypeRegister.isModel(@config.type) then TypeRegister.getModel @config.type 
+			else TypeRegister.resolve @config.type
 
 	@registerAttribute: (name) -> TypeRegister.addAttribute name, @
 
@@ -77,8 +79,6 @@ class Attribute extends Base
 		
 		@set(@config.default) if @config.default?
 
-	raw: -> @value
-	get: -> @value
 	set: (value) ->
 		throw new Error "Can't set a readonly attribute." if @readonly
 		
@@ -91,12 +91,10 @@ class Attribute extends Base
 		isDiff = @_applyValue value
 		if isDiff
 			if @is 'NOT_SET' then @state = 'SET'
-			else if @is 'DIRTY' then @state = 'CONFLICTED'
+			# else if @is 'DIRTY' then @state = 'CONFLICTED'
 
-			@_emitChange @value, @previous, metadata
+			@_emitChange @value, @previous, metadata		
 			
-	rollback: -> @
-	commit: -> @
 	_applyValue: (value) -> throw new Error "Override _applyValue on #{@}"	
 	_emitChange: (newValue, oldValue, metadata) -> @emit "change", newValue, oldValue, metadata
 
