@@ -291,7 +291,6 @@ class Collection extends Base
 
 	@loadProxyMethods: ->
 		_.each @underscoreProxyMethods, (method) =>
-			console.log method
 			@::[method] = (args...) -> _[method].apply(_, [this].concat(args))
 			
 	@loadProxyMethods()

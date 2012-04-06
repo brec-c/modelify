@@ -1,9 +1,9 @@
 Attribute = require './Attribute'
-Collection = require '../Collection'
+{Collection} = require '../core'
 
-class CollectionAttribute extends Attribute
+class Collection extends Attribute
 
-	@declare 'collection'
+	@registerAttribute 'collection'
 	
 	constructor: (config) ->
 		super config
@@ -30,4 +30,4 @@ class CollectionAttribute extends Attribute
 		
 		return true
 
-module.exports = CollectionAttribute
+module.exports = Collection

@@ -1,5 +1,5 @@
-Base     = require '../Base'
-Resolver = require '../Util'
+{Base}         = require '../core'
+TypeRegister   = require '../TypeRegister'
 
 class Attribute extends Base
 
@@ -56,9 +56,16 @@ class Attribute extends Base
 	@define "readonly",   get: -> if @config.readonly? then @config.readonly else false
 	@define "required",   get: -> if @config.isRequired? then @config.isRequired else false
 	@define "transient",  get: -> if @config.isTransient? then @config.isTransient else false
-	@define "type",       get: -> Resolver.resolve @config.type
 
-	@declare: (type) -> Resolver.registerPlugin 'attribute', type, @
+	@define 'typeString', get: -> @config.type
+	@define 'type',
+		get: -> 
+			if TypeRegister.isModel(@config.type)
+				TypeRegister.getModel @config.type 
+			else 
+				TypeRegister.resolve @config.type
+
+	@registerAttribute: (name) -> TypeRegister.addAttribute name, @
 
 	constructor: (config) ->
 		super(config)

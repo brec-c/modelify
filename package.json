@@ -15,6 +15,7 @@
 		,"common-emitter"  : ""
 		,"underscore"      : ""
 		,"detectify"       : ""
+		,"node-uuid"       : ""
 	}
 	,"devDependencies"     : {}
 }

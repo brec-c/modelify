@@ -1,4 +1,4 @@
-Collection = require './Collection'
+{Collection} = require './core'
 
 class ModelQuery extends Collection
 	

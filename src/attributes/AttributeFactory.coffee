@@ -1,14 +1,9 @@
-Resolver = require '../Util'
+TypeRegister = require '../TypeRegister'
 
 class AttributeFactory
 
-	@resolve: (type) -> 
-		console.log "resolving #{type}"
-		Resolver.resolve 'attribute', type
-
 	@createAttribute: (attrType, config) -> 
-		console.log "creating #{attrType}"
-		attr = @resolve(attrType)
+		attr = TypeRegister.getAttribute attrType
 		new attr(config)
 
 module.exports = AttributeFactory

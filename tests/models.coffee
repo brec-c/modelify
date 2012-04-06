@@ -10,7 +10,7 @@ class User extends Model
 	
 	# @collection 'beers', 'Beer'
 
-	@registerModelType()
+	@registerModel 'User'
 
 
 class Beer extends Model
@@ -18,7 +18,7 @@ class Beer extends Model
 	@property 'kind',  'String'
 	@property 'obj',   'Object'
 
-	@registerModelType()
+	@registerModel 'Beer'
 
 me = new User 
 	name: 'brec'
@@ -28,8 +28,8 @@ beer = new Beer
 	kind: 'wit'
 	obj:  text: 'hello'
 
-console.log "me is in #{me.state}, me store is #{me.store.type.name}"
-console.log "beer is in #{beer.state}, beer store is #{beer.store.type.name}"
+console.log "me is in #{me.state}"
+console.log "beer is in #{beer.state}"
 
 console.log "me.toJSON: #{util.inspect me.toJSON()}, me.attributes: #{util.inspect me.attributes}"
 console.log "beer.toJSON is #{util.inspect beer.toJSON()}"

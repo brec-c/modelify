@@ -1,15 +1,15 @@
 Attribute = require './Attribute'
 
-class ReferenceAttribute extends Attribute
+class Reference extends Attribute
 
-	@declare 'reference'
+	@registerAttribute 'reference'
 
 	constructor: (config) ->
 		super config
 		
-		@store = @type.store
-		unless @store?
-			throw new Error "Invalid type for reference."
+		@store = @type.prototype.store
+		unless @store? 
+			throw new Error "Invalid type (#{@typeString}) for reference."
 			
 	raw: -> @value.id?
 	
@@ -22,4 +22,4 @@ class ReferenceAttribute extends Attribute
 			return true
 		return false
 
-module.exports = ReferenceAttribute
+module.exports = Reference

@@ -1,7 +1,7 @@
-Base                          = require './Base'
+{Base}                        = require './core'
 Store                         = require './Store'
 {AttributeFactory, Attribute} = require './attributes'
-Util                          = require './Util'
+TypeRegister                  = require './TypeRegister'
 _                             = require 'underscore'
 
 class Model extends Base
@@ -93,9 +93,9 @@ class Model extends Base
 	# Store proxy methods
 	#
 	
-	@registerModelType: -> 
+	@registerModel: (name) -> 
 		@::store = new Store type:@
-		console.log  "store exists: #{@::store?}"
+		TypeRegister.addModel name, @
 
 	@get    : -> @store.get.apply    @store, arguments
 	@find   : -> @store.find.apply   @store, arguments
@@ -116,12 +116,8 @@ class Model extends Base
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
 
-	Util.registerPlugin('model', @constructor.name, @)
-
 	constructor: (data) ->
 		super
-
-		console.log  "store exists: #{@store?} and type is #{@store.type.name}"
 
 		@buildAttributes()
 		@store.registerModel @
@@ -132,7 +128,7 @@ class Model extends Base
 		@attributes = {}
 		
 		unless @_schema['id']?
-			@_schema['id'] = kind: 'property', name: 'id', type: 'Number'
+			@_schema['id'] = kind: 'property', name: 'id', type: 'String'
 		
 		for name, config of @_schema
 			console.log "building attribute for #{name}"
@@ -160,7 +156,7 @@ class Model extends Base
 	toJSON: (attributes=@attributes)->
 		values = {}
 		for name,attr of @attributes
-			values[attr.name] = attr.raw()
+			values[attr.name] = attr.raw() unless attr.is 'NOT_SET'
 		return values
 
 module.exports = Model
