@@ -3,8 +3,61 @@ Store                         = require './Store'
 {AttributeFactory, Attribute} = require './attributes'
 TypeRegister                  = require './TypeRegister'
 _                             = require 'underscore'
+Stateful                      = require 'stateful'
 
 class Model extends Base
+	
+	# New statechart implementation
+	# @StateChart
+	# 	New:
+	# 		transitions: [
+	# 			destination: 'Existing'
+	# 			action: 'save'
+	# 		]
+	# 		methods: 
+	# 			save: -> Stateful.Success
+	# 			
+	# 	Existing:
+	# 		transitions: [
+	# 			destination: 'Existing/Loaded'
+	# 			action: 'parse'
+	# 		]
+	# 		methods:
+	# 			parse: -> Stateful.Success
+	# 		paths:
+	# 			Loaded:
+	# 				transitions: [
+	# 					destination: 'Existing/Loaded/Editing'
+	# 					action: 'startEdit'
+	# 				]
+	# 				methods: 
+	# 					startEdit: -> Stateful.Success
+	# 				paths:
+	# 					Editing:
+	# 						transitions: [
+	# 							{
+	# 								destination: 'Existing/Loaded'
+	# 								action: 'cancel'
+	# 							}
+	# 							{
+	# 								destination: 'Existing/Loaded/Editing/Dirty'
+	# 								action: 'save'
+	# 							}
+	# 						]
+	# 						methods:
+	# 							cancel: -> Stateful.Success
+	# 							save: -> Stateful.Success
+	# 						paths:
+	# 							Dirty:
+	# 								transitions: [
+	# 									{destination: 'Existing/Loaded',action: 'commit'}
+	# 									{destination: 'Existing/Loaded',action: 'rollback'}
+	# 								]
+	# 								methods: 
+	# 									commit: -> Stateful.Success
+	# 									rollback: -> Stateful.Success
+	# 			
+	# 
 	
 	@addState 'NEW',
 		transitions :
