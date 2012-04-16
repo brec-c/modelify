@@ -8,56 +8,57 @@ Stateful                      = require 'stateful'
 class Model extends Base
 	
 	# New statechart implementation
-	# @StateChart
-	# 	New:
-	# 		transitions: [
-	# 			destination: 'Existing'
-	# 			action: 'save'
-	# 		]
-	# 		methods: 
-	# 			save: -> Stateful.Success
-	# 			
-	# 	Existing:
-	# 		transitions: [
-	# 			destination: 'Existing/Loaded'
-	# 			action: 'parse'
-	# 		]
-	# 		methods:
-	# 			parse: -> Stateful.Success
-	# 		paths:
-	# 			Loaded:
-	# 				transitions: [
-	# 					destination: 'Existing/Loaded/Editing'
-	# 					action: 'startEdit'
-	# 				]
-	# 				methods: 
-	# 					startEdit: -> Stateful.Success
-	# 				paths:
-	# 					Editing:
-	# 						transitions: [
-	# 							{
-	# 								destination: 'Existing/Loaded'
-	# 								action: 'cancel'
-	# 							}
-	# 							{
-	# 								destination: 'Existing/Loaded/Editing/Dirty'
-	# 								action: 'save'
-	# 							}
-	# 						]
-	# 						methods:
-	# 							cancel: -> Stateful.Success
-	# 							save: -> Stateful.Success
-	# 						paths:
-	# 							Dirty:
-	# 								transitions: [
-	# 									{destination: 'Existing/Loaded',action: 'commit'}
-	# 									{destination: 'Existing/Loaded',action: 'rollback'}
-	# 								]
-	# 								methods: 
-	# 									commit: -> Stateful.Success
-	# 									rollback: -> Stateful.Success
-	# 			
-	# 
+	###
+	@StateChart
+		New:
+			transitions: [
+				destination: 'Existing'
+				action: 'save'
+			]
+			methods: 
+				save: -> Stateful.Success
+				
+		Existing:
+			transitions: [
+				destination: 'Existing/Loaded'
+				action: 'parse'
+			]
+			methods:
+				parse: -> Stateful.Success
+			paths:
+				Loaded:
+					transitions: [
+						destination: 'Existing/Loaded/Editing'
+						action: 'startEdit'
+					]
+					methods: 
+						startEdit: -> Stateful.Success
+					paths:
+						Editing:
+							transitions: [
+								{
+									destination: 'Existing/Loaded'
+									action: 'cancel'
+								}
+								{
+									destination: 'Existing/Loaded/Editing/Dirty'
+									action: 'save'
+								}
+							]
+							methods:
+								cancel: -> Stateful.Success
+								save: -> Stateful.Success
+							paths:
+								Dirty:
+									transitions: [
+										{destination: 'Existing/Loaded',action: 'commit'}
+										{destination: 'Existing/Loaded',action: 'rollback'}
+									]
+									methods: 
+										commit: -> Stateful.Success
+										rollback: -> Stateful.Success
+	###
+	
 	
 	@addState 'NEW',
 		transitions :
@@ -150,11 +151,7 @@ class Model extends Base
 	#
 	# Store proxy methods
 	#
-	
-	@registerModel: (name) -> 
-		@::store = new Store type:@
-		TypeRegister.addModel name, @
-
+	@create : -> @store.create.apply @store, arguments
 	@get    : -> @store.get.apply    @store, arguments
 	@find   : -> @store.find.apply   @store, arguments
 	@parse  : -> @store.parse.apply  @store, arguments
@@ -173,12 +170,18 @@ class Model extends Base
 	@property:   (name, type, config) -> @_attribute('property',   name, type, config)
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
+	
+	@registerModel: (name) -> 
+		@::store = new Store type:@
+		TypeRegister.addModel name, @
 
 	constructor: (data) ->
 		super
 
+		console.log "FIX ME: Need to add in parsing of data and figure out starting off State"
+
 		@buildAttributes()
-		@parse data
+		# @parse data
 		@store.registerModel @
 
 	dispose: -> 

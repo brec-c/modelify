@@ -43,6 +43,8 @@ class Store extends Base
 
 		model
 
+	create: (data) -> 
+
 	get: (id) -> @models[id] or null	# returns Model (if already exists), expects id
 	
 	find: ->	# returns Bindings or something like that
