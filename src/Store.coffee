@@ -11,10 +11,9 @@ class Store extends Base
 
 		@models = {}
 
-	registerModel: (model) ->                        # Called by the Model that was just created.
-		
-		model.on 'statechange:DIRTY', (model) => @onModelDirty model
-		model.on 'statechange:LOCAL',   (model) => @onModelLocal model
+	registerModel: (model) ->
+		model.on 'statechange:Dirty', (model) => @onModelDirty model
+		model.on 'statechange:New',   (model) => @onModelNew model
 
 		# try to auto-generate an ID
 		unless model.id
@@ -44,6 +43,9 @@ class Store extends Base
 		model
 
 	create: (data) -> 
+		model = new @type state: "New"
+		@registerModel model
+		@parse data
 
 	get: (id) -> @models[id] or null	# returns Model (if already exists), expects id
 	

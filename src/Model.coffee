@@ -2,13 +2,12 @@
 Store                         = require './Store'
 {AttributeFactory, Attribute} = require './attributes'
 TypeRegister                  = require './TypeRegister'
+
 _                             = require 'underscore'
 Stateful                      = require 'stateful'
 
 class Model extends Base
 	
-	# New statechart implementation
-	###
 	@StateChart
 		New:
 			transitions: [
@@ -48,6 +47,9 @@ class Model extends Base
 							methods:
 								cancel: -> Stateful.Success
 								save: -> Stateful.Success
+								set: (name, value) ->
+									attribute = @attributes[name]
+									attribute?.set value
 							paths:
 								Dirty:
 									transitions: [
@@ -57,105 +59,15 @@ class Model extends Base
 									methods: 
 										commit: -> Stateful.Success
 										rollback: -> Stateful.Success
-	###
-	
-	
-	@addState 'NEW',
-		transitions :
-			initial : true
-			exit    : 'LOCAL, READY'
-		methods     : 
-			
-			buildAttributes: ->
-				@attributes = {}
-
-				unless @_schema['id']?
-					@_schema['id'] = kind: 'property', name: 'id', type: 'String'
-
-				for name, config of @_schema
-					console.log "building attribute for #{name}"
-					Object.defineProperty this, name,
-						get: -> @get(name)
-						set: (value) -> @set(name, value)
-
-					attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
-					@attributes[name] = attr
-
-					attr.on "change",      => @onAttributeChange
-					attr.on "stateChange", => @onAttributeStateChange
-			
-			# now, determine from data passed in if we're an existing model or a new local model
-			parse: (obj) ->
-				
-					
-			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-				@eventBuffer = [] unless @eventBuffer
-				@eventBuffer.push arguments
-
-			onAttributeStateChange: (attr) ->
-				for name, attribute of @attributes
-					if attribute.require and attribute.is 'NOT_SET' then return
-				@state = 'READY'
-			
-	@addState 'LOCAL',
-		transitions :
-			enter   : 'NEW'
-			exit    : 'SYNCING'
-			
-	@addState 'READY',
-		transitions :
-			enter   : 'NEW,DIRTY,SYNCING,EDITING'
-			exit    : 'EDITING'
-			
-	@addState 'DIRTY',
-		transitions :
-			enter   : 'EDITING,NEW'
-			exit    : 'READY,SYNCING,EDITING'
-			
-	# @addState 'CONFLICTED',
-	# 	transitions :
-	# 		enter   : 'DIRTY'
-	# 		exit    : 'DIRTY,READY,EDITING'
-			
-	@addState 'EDITING',
-		transitions :
-			enter   : 'READY,DIRTY'
-			exit    : 'DIRTY,READY'
-		methods     :
-			
-			set: (name, value) ->
-				attribute = @attributes[name]
-				attribute?.set value
-				
-			onChange: (changes, metadata) ->
-				@eventBuffer = [] @eventBuffer unless @eventBuffer
-				@eventBuffer.push arguments
-
-			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-				@eventBuffer = [] unless @eventBuffer
-				@eventBuffer.push arguments
-
-	# do we want models to be aware of this?
-	@addState 'SYNCING',
-		transitions :
-			enter   : 'DIRTY, LOCAL'
-			exit    : 'READY'
-		methods     : 
-			
-			onAttributeChange: (attribute, newValue, oldValue, metadata) ->
-				@eventBuffer = [] unless @eventBuffer
-				@eventBuffer.push arguments
-
-	@buildStateChart()
 
 	#
 	# Store proxy methods
 	#
 	@create : -> @store.create.apply @store, arguments
+	@resolve: -> @store.resolve.apply @store, arguments
+
 	@get    : -> @store.get.apply    @store, arguments
 	@find   : -> @store.find.apply   @store, arguments
-	@parse  : -> @store.parse.apply  @store, arguments
-
 
 	#
 	# Model declarative definitions
@@ -175,14 +87,33 @@ class Model extends Base
 		@::store = new Store type:@
 		TypeRegister.addModel name, @
 
-	constructor: (data) ->
+	constructor: (config) ->
 		super
 
-		console.log "FIX ME: Need to add in parsing of data and figure out starting off State"
+		throw new Error "Must use defined methods for creating new models." unless @config.state?
+
+		console.log "TODO: add ability to initialize to state to Stateful"
+		# @initState @config.state
 
 		@buildAttributes()
-		# @parse data
-		@store.registerModel @
+
+	buildAttributes: ->
+		@attributes = {}
+
+		unless @_schema['id']?
+			@_schema['id'] = kind: 'property', name: 'id', type: 'String'
+
+		for name, config of @_schema
+			console.log "building attribute for #{name}"
+			Object.defineProperty this, name,
+				get: -> @get(name)
+				set: (value) -> @set(name, value)
+
+			attr = AttributeFactory.createAttribute config.kind, _.extend(config, owner: @)
+			@attributes[name] = attr
+
+			attr.on "change",      => @onAttributeChange
+			attr.on "stateChange", => @onAttributeStateChange
 
 	dispose: -> 
 		super
