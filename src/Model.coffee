@@ -63,11 +63,11 @@ class Model extends Base
 	#
 	# Store proxy methods
 	#
-	@create : -> @store.create.apply @store, arguments
+	@create : -> @store.create.apply  @store, arguments
 	@resolve: -> @store.resolve.apply @store, arguments
-
-	@get    : -> @store.get.apply    @store, arguments
-	@find   : -> @store.find.apply   @store, arguments
+	@get    : -> @store.get.apply     @store, arguments
+	@find   : -> @store.find.apply    @store, arguments
+	@delete : -> @store.delete.apply  @store, arguments
 
 	#
 	# Model declarative definitions
@@ -87,15 +87,18 @@ class Model extends Base
 		@::store = new Store type:@
 		TypeRegister.addModel name, @
 
+# ---------------------------------------------------------------------------------------
+
 	constructor: (config) ->
 		super
 
 		throw new Error "Must use defined methods for creating new models." unless @config.state?
 
-		console.log "TODO: add ability to initialize to state to Stateful"
-		# @initState @config.state
+		@state = @config.state
 
 		@buildAttributes()
+		@parse config.data
+		@store.registerModel @
 
 	buildAttributes: ->
 		@attributes = {}

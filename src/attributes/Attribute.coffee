@@ -3,6 +3,18 @@ TypeRegister   = require '../TypeRegister'
 
 class Attribute extends Base
 
+	@StateChart
+		Unloaded: 
+			transitions: [
+				destination: 'Loaded'
+				action: 'update'
+			]
+			methods: 
+				update: (value, metadata) -> @_update value, metadata
+		Loaded:
+			tr
+
+	###
 	@addState 'NOT_SET',
 		transitions:
 			initial: true
@@ -54,6 +66,7 @@ class Attribute extends Base
 	# 			return this
 
 	@buildStateChart()
+	###
 	
 	@define "name",       get: -> @config.name
 	@define "owner",      get: -> @config.owner
@@ -68,6 +81,8 @@ class Attribute extends Base
 			else TypeRegister.resolve @config.type
 
 	@registerAttribute: (name) -> TypeRegister.addAttribute name, @
+
+# ---------------------------------------------------------------------------------------
 
 	constructor: (config) ->
 		super(config)

@@ -6,6 +6,8 @@ class Store extends Base
 
 	@define "type", get: -> @config.type
 
+# ---------------------------------------------------------------------------------------
+
 	constructor: (config) ->
 		super config
 
@@ -25,6 +27,8 @@ class Store extends Base
 			else throw new Error "Missing id on #{model}"
 		
 		@models[model.id] = model
+
+		@emit "add", model
 		
 	resolve: (obj) ->
 		if _.isArray obj then return (@resolve item for item in obj)
@@ -32,25 +36,24 @@ class Store extends Base
 		
 		return obj if obj instanceof @type
 		
-		@parse obj
-		
-	parse: (obj) ->
 		if obj.id then model = @get obj.id
 
-		if model then model.update obj
-		else model = new @type obj
+		if model then model.parse obj
+		else model = new @type data: obj, state: 'Existing'
 
 		model
-
-	create: (data) -> 
-		model = new @type state: "New"
-		@registerModel model
-		@parse data
+		
+	create: (data) -> model = new @type state: 'New', data: data
 
 	get: (id) -> @models[id] or null	# returns Model (if already exists), expects id
 	
-	find: ->	# returns Bindings or something like that
-		
-	delete: ->  # if doesn't exist yet
+	find: (query) ->	# returns Bindings or something like that
+
+	delete: (modelOrId) ->
+		model = if modelOrId instanceof @type then modelOrId else @get modelOrId
+		return unless model
+
+		delete @models[model.id]
+		model.dispose()
 
 module.exports = Store
