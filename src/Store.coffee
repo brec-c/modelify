@@ -43,7 +43,7 @@ class Store extends Base
 
 		model
 		
-	create: (data) -> model = new @type state: 'New', data: data
+	create: (data, metadata) -> model = new @type state: 'New', data: data, metadata: metadata
 
 	get: (id) -> @models[id] or null	# returns Model (if already exists), expects id
 	
@@ -54,6 +54,9 @@ class Store extends Base
 		return unless model
 
 		delete @models[model.id]
+
+		@emit "deleting", model
+
 		model.dispose()
 
 module.exports = Store

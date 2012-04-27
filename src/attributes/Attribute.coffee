@@ -3,71 +3,47 @@ TypeRegister   = require '../TypeRegister'
 
 class Attribute extends Base
 
+# ---------------------------------------------------------------------------------------
+
 	@StateChart
 		Unloaded: 
 			transitions: [
 				destination: 'Loaded'
 				action: 'update'
 			]
-			methods: 
-				update: (value, metadata) -> @_update value, metadata
-		Loaded:
-			tr
+			methods:
+				update: (value, metadata) ->
+					isDiff = @_applyValue value
+					if isDiff then @_emitChange @value, @previous, metadata
+					return {name: @name, value: @value, previous: @previous}
+			paths: 
+				Loaded:
+					transitions: [
+						destination: 'Dirty'
+						action: 'set'
+					]
+					methods: 
+						set: (value) ->
+							throw new Error "Can't set a readonly attribute." if @readonly
+				
+							isDiff = @_applyValue value
+							if isDiff then @_emitChange @value, @previous
 
-	###
-	@addState 'NOT_SET',
-		transitions:
-			initial: true
-			exit:    'SET'#, DIRTY'
-		methods:
-			set: (value) ->	throw new Error "Can't set an attribute that isn't loaded."
+					paths: 
+						Dirty:
+							transitions: [
+								{destination: 'Unloaded/Loaded', action: 'commit'}
+								{destination: 'Unloaded/Loaded', action: 'rollback'}
+							]
+							methods:
+								commit: -> Stateful.Success
+								rollback: -> 
+									@value = @previous
+									@_emitChange @value
 
-	@addState 'SET',
-		transitions:
-			enter  :   'DIRTY, NOT_SET'
-			exit   :   'DIRTY'
-		methods    :
-			raw: -> @value
-			get: -> @value
-			
 
-	@addState 'DIRTY',
-		transitions:
-			enter:   'SET' #NOT_SET
-			exit:    'SET'
-		methods: 
-			rollback: ->
-				@value = @previous # even if undefined I think
-				@previous = undefined
+# ---------------------------------------------------------------------------------------
 
-				@state = 'SET'
-				@_emitChange @value, @previous
-
-				return this
-			
-			commit: ->
-				@previous = undefined # not sure why we do this here?
-				@state = 'SET'
-
-				return this
-
-	# @addState 'CONFLICTED',
-	# 	transitions:
-	# 		enter:   'DIRTY'
-	# 		exit:    'DIRTY, SET'
-	# 	methods: 
-	# 		rollback: ->
-	# 			@value = @previous # even if undefined I think
-	# 			@previous = undefined
-	# 
-	# 			@state = 'SET'
-	# 			@_emitChange @value, @previous
-	# 
-	# 			return this
-
-	@buildStateChart()
-	###
-	
 	@define "name",       get: -> @config.name
 	@define "owner",      get: -> @config.owner
 	@define "readonly",   get: -> if @config.readonly? then @config.readonly else false
@@ -87,31 +63,14 @@ class Attribute extends Base
 	constructor: (config) ->
 		super(config)
 		
+		@state = 'Unloaded'
+
 		@value    = undefined
 		@previous = undefined
 
 		# TODO add support for validation
-		
-		@set(@config.default) if @config.default?
-
-	set: (value) ->
-		throw new Error "Can't set a readonly attribute." if @readonly
-		
-		isDiff = @_applyValue value
-		if isDiff
-			@state = 'DIRTY'
-			@_emitChange @value, @previous
-
-	update: (value, metadata) ->
-		isDiff = @_applyValue value
-		if isDiff
-			if @is 'NOT_SET' then @state = 'SET'
-			# else if @is 'DIRTY' then @state = 'CONFLICTED'
-
-			@_emitChange @value, @previous, metadata		
-			
+					
 	_applyValue: (value) -> throw new Error "Override _applyValue on #{@}"	
-	_emitChange: (newValue, oldValue, metadata) -> @emit "change", newValue, oldValue, metadata
-
+	_emitChange: (newValue, oldValue, metadata) -> @emit "change", @, newValue, oldValue, metadata
 
 module.exports = Attribute

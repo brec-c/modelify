@@ -7,7 +7,9 @@ _                             = require 'underscore'
 Stateful                      = require 'stateful'
 
 class Model extends Base
-	
+
+# ---------------------------------------------------------------------------------------
+
 	@StateChart
 		New:
 			transitions: [
@@ -19,15 +21,16 @@ class Model extends Base
 				
 		Existing:
 			transitions: [
-				destination: 'Existing/Loaded'
+				destination: 'Loaded'
 				action: 'parse'
 			]
 			methods:
-				parse: -> Stateful.Success
+				parse: -> @super_parse.apply @, arguments
+				get: (name) ->@attributes[name]?.get()
 			paths:
 				Loaded:
 					transitions: [
-						destination: 'Existing/Loaded/Editing'
+						destination: 'Editing'
 						action: 'startEdit'
 					]
 					methods: 
@@ -35,14 +38,8 @@ class Model extends Base
 					paths:
 						Editing:
 							transitions: [
-								{
-									destination: 'Existing/Loaded'
-									action: 'cancel'
-								}
-								{
-									destination: 'Existing/Loaded/Editing/Dirty'
-									action: 'save'
-								}
+								{ destination: 'Existing/Loaded', action: 'cancel' }
+								{ destination: 'Dirty', action: 'save' }
 							]
 							methods:
 								cancel: -> Stateful.Success
@@ -53,21 +50,25 @@ class Model extends Base
 							paths:
 								Dirty:
 									transitions: [
-										{destination: 'Existing/Loaded',action: 'commit'}
-										{destination: 'Existing/Loaded',action: 'rollback'}
+										{ destination: 'Existing/Loaded',action: 'commit' }
+										{ destination: 'Existing/Loaded',action: 'rollback' }
 									]
 									methods: 
 										commit: -> Stateful.Success
 										rollback: -> Stateful.Success
 
+# ---------------------------------------------------------------------------------------
+
 	#
 	# Store proxy methods
 	#
-	@create : -> @store.create.apply  @store, arguments
-	@resolve: -> @store.resolve.apply @store, arguments
-	@get    : -> @store.get.apply     @store, arguments
-	@find   : -> @store.find.apply    @store, arguments
-	@delete : -> @store.delete.apply  @store, arguments
+	@create : -> @::store.create.apply  @::store, arguments
+	@resolve: -> @::store.resolve.apply @::store, arguments
+	@get    : -> @::store.get.apply     @::store, arguments
+	@find   : -> @::store.find.apply    @::store, arguments
+	@delete : -> @::store.delete.apply  @::store, arguments
+
+# ---------------------------------------------------------------------------------------
 
 	#
 	# Model declarative definitions
@@ -83,8 +84,8 @@ class Model extends Base
 	@reference:  (name, type, config) -> @_attribute('reference',  name, type, config)
 	@collection: (name, type, config) -> @_attribute('collection', name, type, config)
 	
-	@registerModel: (name) -> 
-		@::store = new Store type:@
+	@registerModel: (name) ->
+		@::store = new Store type: @
 		TypeRegister.addModel name, @
 
 # ---------------------------------------------------------------------------------------
@@ -97,7 +98,8 @@ class Model extends Base
 		@state = @config.state
 
 		@buildAttributes()
-		@parse config.data
+		@parse config.data, config.metadata
+
 		@store.registerModel @
 
 	buildAttributes: ->
@@ -122,10 +124,15 @@ class Model extends Base
 		super
 		_.each @attributes, (attr) => attr.dispose()
 
+	parse: (jsonObj, metadata) -> @update jsonObj, metadata
+
 	update: (name, value, metadata={}) ->
-		
-		updateAttribute = (attribute, value, metadata) -> attribute?.update value, metadata
-		
+
+		updateAttribute = (attribute, value, metadata) ->
+			return unless attribute
+			console.log "setting #{attribute.name} to #{value}"
+			attribute?.update value, metadata
+
 		if _.isObject name
 			metadata = value or {}
 			data = name
@@ -137,6 +144,8 @@ class Model extends Base
 		else
 			attribute = @attributes[name]
 			changes = [updateAttribute(attribute, value, metadata)]
+
+		console.log "changes: #{changes}"
 
 		@onChange changes, metadata
 	
@@ -150,10 +159,6 @@ class Model extends Base
 			metadata: metadata
 
 		@emit "change:#{attribute.name}", changeObj
-		
-	get: (name) ->
-		attr = @attributes[name]
-		attr?.get()
 		
 	toString: ->
 		sup = super
