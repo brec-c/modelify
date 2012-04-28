@@ -1,5 +1,4 @@
 {Base, Collection}  = require './core'
-uuid                = require 'node-uuid'
 _                   = require 'underscore'	
 
 class Store extends Base
@@ -18,13 +17,7 @@ class Store extends Base
 		model.on 'statechange:New',   (model) => @onModelNew model
 
 		# try to auto-generate an ID
-		unless model.id
-			typeString = model.attributes['id'].typeString
-			if typeString is 'String'
-				model.update 'id', uuid.v1()
-			else if typeString is 'Number'
-				model.update 'id', _.uniqueId()
-			else throw new Error "Missing id on #{model}"
+		unless model.get 'id' then model.generateId()
 		
 		@models[model.id] = model
 

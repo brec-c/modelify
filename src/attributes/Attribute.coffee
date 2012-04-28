@@ -69,6 +69,8 @@ class Attribute extends Base
 		@previous = undefined
 
 		# TODO add support for validation
+
+	get: -> @value
 					
 	_applyValue: (value) -> throw new Error "Override _applyValue on #{@}"	
 	_emitChange: (newValue, oldValue, metadata) -> @emit "change", @, newValue, oldValue, metadata

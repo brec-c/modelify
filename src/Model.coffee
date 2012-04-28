@@ -4,6 +4,7 @@ Store                         = require './Store'
 TypeRegister                  = require './TypeRegister'
 
 _                             = require 'underscore'
+uuid                          = require 'node-uuid'
 Stateful                      = require 'stateful'
 
 class Model extends Base
@@ -18,7 +19,6 @@ class Model extends Base
 			]
 			methods: 
 				save: -> Stateful.Success
-				
 		Existing:
 			transitions: [
 				destination: 'Loaded'
@@ -26,7 +26,6 @@ class Model extends Base
 			]
 			methods:
 				parse: -> @super_parse.apply @, arguments
-				get: (name) ->@attributes[name]?.get()
 			paths:
 				Loaded:
 					transitions: [
@@ -124,6 +123,14 @@ class Model extends Base
 		super
 		_.each @attributes, (attr) => attr.dispose()
 
+	generateId: ->
+		typeString = @attributes['id'].typeString
+		if typeString is 'String'
+			@update 'id', uuid.v1()
+		else if typeString is 'Number'
+			@update 'id', _.uniqueId()
+		else throw new Error "Missing id on #{@}"
+
 	parse: (jsonObj, metadata) -> @update jsonObj, metadata
 
 	update: (name, value, metadata={}) ->
@@ -145,7 +152,7 @@ class Model extends Base
 			attribute = @attributes[name]
 			changes = [updateAttribute(attribute, value, metadata)]
 
-		console.log "changes: #{changes}"
+		changes = _.reject changes, (item) -> not item?
 
 		@onChange changes, metadata
 	
@@ -159,6 +166,8 @@ class Model extends Base
 			metadata: metadata
 
 		@emit "change:#{attribute.name}", changeObj
+
+	get: (name) -> @attributes[name]?.get()
 		
 	toString: ->
 		sup = super

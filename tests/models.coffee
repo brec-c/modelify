@@ -33,10 +33,10 @@ me = User.create
 # 	kind: 'wit'
 # 	obj:  text: 'hello'
 
-console.log "me is in #{me.state}"
+# console.log "me is in #{me.state}"
 # console.log "beer is in #{beer.state}"
 
-console.log "me.toJSON: #{util.inspect me.toJSON()}"
+# console.log "me.toJSON: #{util.inspect me.toJSON()}"
 # console.log "beer.toJSON is #{util.inspect beer.toJSON()}"
 
 # q = User.find()
