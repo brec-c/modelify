@@ -5,11 +5,7 @@ _resolve = (typeString) ->
 	if isNodeJS then _this = @
 	else _this = window
 
-	# console.log "resolving type: #{typeString}"
-	# console.log require('util').inspect _this
-	
 	_this[typeString]
-
 
 module.exports = 
 
