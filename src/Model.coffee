@@ -104,6 +104,8 @@ class Model extends Base
 	buildAttributes: ->
 		@attributes = {}
 
+		console.log "Building Model: #{@constructor.name}"
+
 		unless @_schema['id']?
 			@_schema['id'] = kind: 'property', name: 'id', type: 'String'
 
@@ -125,10 +127,9 @@ class Model extends Base
 
 	generateId: ->
 		typeString = @attributes['id'].typeString
-		if typeString is 'String'
-			@update 'id', uuid.v1()
-		else if typeString is 'Number'
-			@update 'id', _.uniqueId()
+
+		if      typeString is 'String' then @update 'id', uuid.v1()
+		else if typeString is 'Number' then @update 'id', _.uniqueId()
 		else throw new Error "Missing id on #{@}"
 
 	parse: (jsonObj, metadata) -> @update jsonObj, metadata
@@ -137,7 +138,7 @@ class Model extends Base
 
 		updateAttribute = (attribute, value, metadata) ->
 			return unless attribute
-			console.log "setting #{attribute.name} to #{value}"
+			console.log "- updating #{attribute.name} to #{value}"
 			attribute?.update value, metadata
 
 		if _.isObject name
@@ -174,10 +175,10 @@ class Model extends Base
 		if @attributes['id']?.is 'SET' then sup += "[#{@id}]"
 		return sup
 		
-	toJSON: (attributes=@attributes)->
+	toJSON: ->
 		values = {}
 		for name,attr of @attributes
-			values[attr.name] = attr.raw() unless attr.is 'NOT_SET'
+			values[attr.name] = attr.raw()
 		return values
 
 module.exports = Model

@@ -15,6 +15,7 @@
 		,"underscore"      : ""
 		,"detectify"       : ""
 		,"node-uuid"       : ""
+		,"jquerify"        : ""
 	}
 	,"devDependencies"     : {}
 }

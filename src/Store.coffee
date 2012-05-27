@@ -23,20 +23,25 @@ class Store extends Base
 
 		@emit "add", model
 		
-	resolve: (obj) ->
+	resolve: (obj, metadata, initialState=null) ->
 		if _.isArray obj then return (@resolve item for item in obj)
 		if obj instanceof Collection then return (@resolve item for item in obj)
 		
 		return obj if obj instanceof @type
-		
+
+		if _.isNumber obj then obj = id: Number(obj)
+
 		if obj.id then model = @get obj.id
 
-		if model then model.parse obj
-		else model = new @type data: obj, state: 'Existing'
+		if model then model.parse obj, metadata
+		else
+			unless initialState isnt null
+				initialState = if obj.id? then "Existing" else "New"
+			model = new @type data: obj, state: initialState
 
 		model
 		
-	create: (data, metadata) -> model = new @type state: 'New', data: data, metadata: metadata
+	create: (data, metadata) -> @resolve data, metadata, 'New'
 
 	get: (id) -> @models[id] or null	# returns Model (if already exists), expects id
 	

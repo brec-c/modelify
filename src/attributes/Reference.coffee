@@ -1,5 +1,7 @@
 Attribute = require './Attribute'
 
+util = require('util')
+
 class Reference extends Attribute
 
 	@registerAttribute 'reference'
@@ -11,14 +13,14 @@ class Reference extends Attribute
 		unless @store? 
 			throw new Error "Invalid type (#{@typeString}) for reference."
 			
-	raw: -> 
-		console.log require('util').inspect @value
-		@value.id?
+	raw: -> "ModelType: #{@value.constructor.name}, id: #{@value.id}"
 	
 	_applyValue: (ref) ->
 		oldValue = @value
+
 		newValue = @store.resolve ref
-		unless oldValue? or newValue isnt oldValue
+
+		unless newValue is oldValue
 			@previous = oldValue
 			@value    = newValue
 			return true
