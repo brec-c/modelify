@@ -39,4 +39,8 @@ console.log "me is in #{me.stateName}"
 console.log "beer is in #{beer.stateName}"
 
 console.log "me.toJSON: #{util.inspect me.toJSON()}"
-console.log "beer.toJSON is #{util.inspect beer.toJSON()}"
+console.log "beer.toJSON: #{util.inspect beer.toJSON()}"
+
+me.save()
+
+console.log me.stateName
