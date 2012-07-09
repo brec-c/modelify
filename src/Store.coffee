@@ -12,6 +12,8 @@ class Store extends Base
 
 		@models = {}
 
+# ---------------------------------------------------------------------------------------
+
 	registerModel: (model) ->
 		model.on 'statechange:Dirty', (model) => @onModelDirty model
 		model.on 'statechange:New',   (model) => @onModelNew model
