@@ -128,34 +128,29 @@ class Model extends Base
 	generateId: ->
 		typeString = @attributes['id'].typeString
 
-		if      typeString is 'String' then @update 'id', uuid.v1()
-		else if typeString is 'Number' then @update 'id', _.uniqueId()
+		if      typeString is 'String' then @updateAttribute 'id', uuid.v1()
+		else if typeString is 'Number' then @updateAttribute 'id', _.uniqueId()
 		else throw new Error "Missing id on #{@}"
 
-	parse: (jsonObj, metadata) -> @update jsonObj, metadata
-
-	update: (name, value, metadata={}) ->
-
-		updateAttribute = (attribute, value, metadata) ->
-			return unless attribute
-			console.log "- updating #{attribute.name} to #{value}"
-			attribute?.update value, metadata
-
-		if _.isObject name
-			metadata = value or {}
-			data = name
-			data = data.raw() if data instanceof Model
-
-			changes = for name, value of data
-				attribute = @attributes[name]
-				updateAttribute attribute, value, metadata
-		else
+	parse: (jsonObj, metadata) ->
+		changes = for name, value of jsonObj
 			attribute = @attributes[name]
-			changes = [updateAttribute(attribute, value, metadata)]
+			@updateAttribute attribute, value, metadata
 
 		changes = _.reject changes, (item) -> not item?
 
 		@onChange changes, metadata
+
+	updateAttribute: (nameOrAttribute, value, metadata) ->
+		if typeof nameOrAttribute is 'string'
+			attribute = @attributes[nameOrAttribute]
+		else if nameOrAttribute instanceof Attribute
+			attribute = nameOrAttribute
+		else
+			throw new Error "Missing attribute: #{nameOrAttribute} from #{_.keys @attributes}"
+
+		console.log "- updating #{attribute.name} to #{value}"
+		attribute.update value, metadata
 	
 	onChange: (changes, metadata) -> @emit 'change', changes, metadata
 	
@@ -172,7 +167,7 @@ class Model extends Base
 		
 	toString: ->
 		sup = super
-		if @attributes['id']?.is 'SET' then sup += "[#{@id}]"
+		if @attributes['id']?.is 'Loaded' then sup += "[#{@id}]"
 		return sup
 		
 	toJSON: ->
