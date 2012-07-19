@@ -1,4 +1,4 @@
-{Base}  = require '../../core'
+{Base}  = require '/core'
 
 $ = require "jqueryify"
 
